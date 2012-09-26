@@ -22,9 +22,10 @@ We will use two servers or Virtual Machines preferrably residing on diferent phy
 In short the following schema will be used:
 
 #### Nodes and OS
-
-***freeswitch-dev :*** Primary active node, Debian Squeeze 6.0 - 2.6.32-5-amd64
-***ubuntu-v20z    :*** Secondary backup node, Ubuntu 10.04.3 LTS - 2.6.32-21-generic-pae
+| Node Name	       | Description           | Distro                                     |
+|:---------------------|-----------------------|:------------------------------------------:|
+|***freeswitch-dev :***| Primary active node   | Debian Squeeze 6.0 - 2.6.32-5-amd64        |
+|***ubuntu-v20z    :***| Secondary backup node | Ubuntu 10.04.3 LTS - 2.6.32-21-generic-pae |
 
 #### IP schema
 
