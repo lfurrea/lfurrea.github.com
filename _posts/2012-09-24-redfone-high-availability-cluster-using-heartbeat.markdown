@@ -7,7 +7,7 @@ title: RedFone & FreeSWITCH high availability
 
 ### Introduction
 
-[High availability]https://en.wikipedia.org/wiki/High_availability is a system design and implementation approach geared towards keeping online resources available through node failure or system maintenance. Online services including their IP address can be migrated to backup nodes at any time, due to failures in the active node or the need of administrative maintenance. 
+[High availability](https://en.wikipedia.org/wiki/High_availability) is a system design and implementation approach geared towards keeping online resources available through node failure or system maintenance. Online services including their IP address can be migrated to backup nodes at any time, due to failures in the active node or the need of administrative maintenance. 
 
 This article describes how to configure a simple active/passive failover HA setup for a Fonebridge-FreeSWITCH system using Heartbeat and Pacemaker. 
 
@@ -28,9 +28,9 @@ ubuntu-v20z    - Secondary backup node, Ubuntu 10.04.3 LTS - 2.6.32-21-generic-p
 
 #### IP schema
 
-10.101.20.110 - eth0 on freeswitch-dev
-10.101.20.220 - eth0 on ubuntu-v20z
-10.101.20.219 - eth0:0 Floating IP on active node
+*10.101.20.110 - eth0 on freeswitch-dev
+*10.101.20.220 - eth0 on ubuntu-v20z
+*10.101.20.219 - eth0:0 Floating IP on active node
 
 
 ### Required Packages: Installation
