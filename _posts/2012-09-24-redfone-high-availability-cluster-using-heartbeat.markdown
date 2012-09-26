@@ -36,10 +36,13 @@ In short the following schema will be used:
 ### Required Packages: Installation
 
 
-```ruby
-apt-get update
-apt-get upgrade
-apt-get install heartbeat pacemaker
+```
+\#shell>apt-get update
+
+\#shell>apt-get upgrade
+
+\#shell>apt-get install heartbeat pacemaker
+
 ```
 On Debian Squeeze you may get the following right after installation
 
