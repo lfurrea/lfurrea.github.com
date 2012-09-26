@@ -13,7 +13,7 @@ This article describes how to configure a simple active/passive failover HA setu
 
 Heartbat is a daemon that allows the nodes to know about the presence or disappearance of peer processes on other machines and to easily exchange messages between them.
 
-The heartbeat daemon needs to be combined with a cluster resource manager (CRM) which has the task of starting and stopping services (moving IP addresses, starting and stopping init scripts) so that the highly available setup can be sustained. [Pacemaker]http://clusterlabs.org/wiki/Main_Page is the cluster resource manager used in our implementation.
+The heartbeat daemon needs to be combined with a cluster resource manager (CRM) which has the task of starting and stopping services (moving IP addresses, starting and stopping init scripts) so that the highly available setup can be sustained. [Pacemaker](http://clusterlabs.org/wiki/Main_Page) is the cluster resource manager used in our implementation.
 
 ### Equipment Overview, Hardware Requirements
 
@@ -28,14 +28,15 @@ ubuntu-v20z    - Secondary backup node, Ubuntu 10.04.3 LTS - 2.6.32-21-generic-p
 
 #### IP schema
 
-*10.101.20.110 - eth0 on freeswitch-dev
-*10.101.20.220 - eth0 on ubuntu-v20z
-*10.101.20.219 - eth0:0 Floating IP on active node
+* 10.101.20.110 - eth0 on freeswitch-dev
+* 10.101.20.220 - eth0 on ubuntu-v20z
+* 10.101.20.219 - eth0:0 Floating IP on active node
 
 
 ### Required Packages: Installation
 
-```
+
+```shell
 apt-get update
 apt-get upgrade
 apt-get install heartbeat pacemaker
@@ -57,7 +58,7 @@ On the primary HA node, create a file named /etc/ha.d/ha.cf with the following c
 
 ***File:***/etc/ha.d/ha.cf (on primary node)
 
-```
+```shell
 logfacility daemon
 keepalive 2
 deadtime 15
@@ -77,7 +78,7 @@ On the secondary HA node create the equivalent /etc/ha.d/ha.cf file replacing th
 
 ***File:***/etc/ha.d/ha.cf (on secondary node)
 
-```
+```shell
 logfacility daemon
 keepalive 2
 deadtime 15
@@ -95,7 +96,7 @@ crm respawn
 Again on primary HA node create the file /etc/ha.d/authkeys with the following content.
 
 
-```
+```shell
 auth 1
 1 sha1 VeryStrongPassword
 ```
@@ -104,23 +105,25 @@ auth 1
 
 Adjust file permissions as follows:
 
-```
-#shell>chmod 600 /etc/ha.d/authkeys
+
+```shell
+\#shell>chmod 600 /etc/ha.d/authkeys
 ```
 
 Then copy this file to the secondary HA node:
 
 
-```
+```shell
 scp /etc/ha.d/authkeys root@ubuntu-v20z:/etc/ha.d/
 ssh root@ubuntu-v20z "chmod 600 /etc/ha.d/authkeys"
 ```
 
 At this point you can go ahead and start the heartbeat services on both nodes
 
-```
-#shell>service heartbeat start
-#shell>ssh root@ubuntu-v20z "service heartbeat start"
+
+```shell
+\#shell>service heartbeat start
+\#shell>ssh root@ubuntu-v20z "service heartbeat start"
 ```
 
 ### Configure Cluster Resources
