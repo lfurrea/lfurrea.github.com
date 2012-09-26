@@ -23,8 +23,8 @@ In short the following schema will be used:
 
 #### Nodes and OS
 
-freeswitch-dev - Primary active node, Debian Squeeze 6.0 - 2.6.32-5-amd64
-ubuntu-v20z    - Secondary backup node, Ubuntu 10.04.3 LTS - 2.6.32-21-generic-pae
+***freeswitch-dev*** : Primary active node, Debian Squeeze 6.0 - 2.6.32-5-amd64
+***ubuntu-v20z***    : Secondary backup node, Ubuntu 10.04.3 LTS - 2.6.32-21-generic-pae
 
 #### IP schema
 
@@ -36,7 +36,7 @@ ubuntu-v20z    - Secondary backup node, Ubuntu 10.04.3 LTS - 2.6.32-21-generic-p
 ### Required Packages: Installation
 
 
-```shell
+```ruby
 apt-get update
 apt-get upgrade
 apt-get install heartbeat pacemaker
