@@ -21,12 +21,13 @@ We will use two servers or Virtual Machines preferrably residing on diferent phy
 
 In short the following schema will be used:
 
-#### Nodes and OS
 
 |Node|Role|Distro|
-|:--------------------|:--------------------|:------------------------------------------|
-|***freeswitch-dev ***| Primary active node   | Debian Squeeze 6.0 | 2.6.32-5-amd64        |
-|***ubuntu-v20z    ***| Secondary backup node | Ubuntu 10.04.3 LTS | 2.6.32-21-generic-pae |
+|:--------------------|:--------------------|:---------------------|
+|freeswitch-dev| Primary active node| Debian Squeeze 6.0
+|ubuntu-v20z| Secondary backup node| Ubuntu 10.04.3 LT
+.
+
 
 #### IP schema
 
@@ -34,8 +35,10 @@ In short the following schema will be used:
 * 10.101.20.220 - eth0 on ubuntu-v20z
 * 10.101.20.219 - eth0:0 Floating IP on active node
 
+.
 
 ### Required Packages: Installation
+
 
     #shell>apt-get update
     #shell>apt-get upgrade
@@ -118,7 +121,67 @@ At this point you can go ahead and start the heartbeat services on both nodes
 
     #shell>service heartbeat start
     #shell>ssh root@ubuntu-v20z "service heartbeat start"
+.
 
 
 ### Configure Cluster Resources
+
+By making use of the Heartbeat messaging and membership capabilities the resource manager will execute scripts and move resources to its convenience in order to achieve maximum availability of services.
+
+This is probably the most cryptic part of the configuration but you can find extensive quality documentation from [Clusterlabs] at [1]
+
+[1]:http://www.clusterlabs.org/doc/en-US/Pacemaker/1.0/html/Pacemaker_Explained/s-resource-supported.html "ClusterLabs"
+
+On the primary node issue the following command which will fire up the text editor set by the environment variable EDITOR. This will most likely be vi unless you have set it differently.
+
+    crm configure edit
+
+You will be presented with information resembling the one below, remember this would be a vi environment.
+
+    node $id="819efb52-62e8-43f6-a9e5-b3ec34de868f" ubuntu-v20z
+    node $id="a2a664c3-94b4-4b06-b664-c2aeebb23bba" freeswitch-dev
+    property $id="cib-bootstrap-options" \
+        dc-version="1.0.9-74392a28b7f31d7ddc86689598bd23114f58978b" \
+        cluster-infrastructure="Heartbeat"
+
+Edit the text above so that your complete configuration resembles the following:
+
+    node $id="819efb52-62e8-43f6-a9e5-b3ec34de868f" ubuntu-v20z
+    node $id="a2a664c3-94b4-4b06-b664-c2aeebb23bba" freeswitch-dev
+    primitive fs lsb:FSSofia \
+            op monitor interval="2" timeout="8" \
+            meta target-role="Started"
+    primitive ip_shared ocf:heartbeat:IPaddr2 \
+            params ip="10.101.20.219" nic="eth0:0"
+    primitive ip_shared_arp ocf:heartbeat:SendArp \
+            params ip="10.101.20.219" nic="eth0:0"
+    group VoiceServices ip_shared ip_shared_arp fs
+    location cli-prefer-VoiceServices VoiceServices \
+            rule $id="cli-prefer-rule-VoiceServices" inf: #uname eq ubuntu-v20z
+    property $id="cib-bootstrap-options" \
+            dc-version="1.0.9-74392a28b7f31d7ddc86689598bd23114f58978b" \
+            cluster-infrastructure="Heartbeat" \
+            expected-quorum-votes="1" \
+            stonith-enabled="false" \
+            no-quorum-policy="ignore" \
+            last-lrm-refresh="1299964019"
+    rsc_defaults $id="rsc-options" \
+            resource-stickiness="100"
+
+Of particular importance are the primitive clauses which define resource agents. You can think of a resource agent simply as a script (shell or even Phython, Perl) that presents a view of resources to the cluster, for example by providing a status CLI option. There are three classes of resources that Pacemaker support and we are using two of the three supported classes in our primitive definitions: Linux Standard Base (LSB) and Open Cluster Framework (OCF).
+
+The first primitive definition uses an LSB resource, the kind of those found in /etc/init.d. We will conveniently turn to the community resources in the freeswitch-contrib repo we find an LSB resource to the ledr/various/ha.d/resources.d/FSSofia which we will copy to /etc/init.d on our primary node.
+
+<script src="https://gist.github.com/3795649.js?file=FSSofia"></script>
+
+So what will happen is that the freeswitch service will be started on both nodes and once a failure or sys admin switchover happens then Pacemaker will restart FreeSWITCH profiles move the floating IP to the new node and send an ARP accordingly to reflect the change on the IP.
+
+You may need to allow the FreeSWITCH service to bind to a non local IP which on Debian can be achived as follows:
+
+    echo 1 > /proc/sys/net/ipv4/ip_nonlocal_bind
+
+or
+
+    sysctl to set net.ipv4.ip_nonlocal_bind = 1
+
 
