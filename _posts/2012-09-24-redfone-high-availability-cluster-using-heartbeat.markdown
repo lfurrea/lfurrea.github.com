@@ -185,3 +185,10 @@ or
     sysctl to set net.ipv4.ip_nonlocal_bind = 1
 
 
+### Monitor Cluster Resources
+
+At this time you can issue the ```crm_mon``` command to start the cluster monitor and you will be able to check the current state of the cluster. The DC (Designated Cluster) node is where all the decisions are made and if the current DC fails, a new one is elected from the remaining cluster nodes.
+
+<script src="https://gist.github.com/3800256.js?file=crm_mon"></script>
+
+
