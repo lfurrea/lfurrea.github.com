@@ -170,7 +170,7 @@ Edit the text above so that your complete configuration resembles the following:
 
 Of particular importance are the primitive clauses which define resource agents. You can think of a resource agent simply as a script (shell or even Phython, Perl) that presents a view of resources to the cluster, for example by providing a status CLI option. There are three classes of resources that Pacemaker support and we are using two of the three supported classes in our primitive definitions: Linux Standard Base (LSB) and Open Cluster Framework (OCF).
 
-The first primitive definition uses an LSB resource, the kind of those found in /etc/init.d. We will conveniently turn to the community resources in the freeswitch-contrib repo we find an LSB resource to the ledr/various/ha.d/resources.d/FSSofia which we will copy to /etc/init.d on our primary node.
+The first primitive definition uses an LSB resource, the kind of those found in /etc/init.d. We will conveniently turn to the community resources and look at the freeswitch-contrib repo.  There is an LSB resource named FSsofia in the directory ```ledr/various/ha.d/resources.d``` which we will use as a base for our LSB resource. Copy this script to /etc/init.d on our primary node and modify so that the final script looks as follows.
 
 <script src="https://gist.github.com/3795649.js?file=FSSofia"></script>
 
@@ -184,11 +184,13 @@ or
 
     sysctl to set net.ipv4.ip_nonlocal_bind = 1
 
+.
+
 
 ### Monitor Cluster Resources
 
 At this time you can issue the ```crm_mon``` command to start the cluster monitor and you will be able to check the current state of the cluster. The DC (Designated Cluster) node is where all the decisions are made and if the current DC fails, a new one is elected from the remaining cluster nodes.
 
-<script src="https://gist.github.com/3800256.js?file=crm_mon"></script>
+<script src="https://gist.github.com/3801277.js"> </script>
 
 
