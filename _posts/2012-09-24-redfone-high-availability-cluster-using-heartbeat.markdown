@@ -162,7 +162,7 @@ Everything looking healthy and therefore we can go ahead and check the cluster m
 
 ### Configure Cluster Resources
 
-By making use of the Heartbeat messaging and membership capabilities the resource manager will execute scripts and move resources to its convenience in order to achieve maximum availability of services.
+By making use of the Corosync messaging and membership capabilities the resource manager will execute scripts and move resources to its convenience in order to achieve maximum availability of services.
 
 This is probably the most cryptic part of the configuration but you can find extensive quality documentation from [Clusterlabs] at [1]
 
@@ -178,31 +178,34 @@ You will be presented with information resembling the one below, remember this w
     node $id="a2a664c3-94b4-4b06-b664-c2aeebb23bba" freeswitch-dev
     property $id="cib-bootstrap-options" \
         dc-version="1.0.9-74392a28b7f31d7ddc86689598bd23114f58978b" \
-        cluster-infrastructure="Heartbeat"
+        cluster-infrastructure="openais"
 
 Edit the text above so that your complete configuration resembles the following:
 
-    node $id="819efb52-62e8-43f6-a9e5-b3ec34de868f" ubuntu-v20z
-    node $id="a2a664c3-94b4-4b06-b664-c2aeebb23bba" freeswitch-dev
-    primitive fs lsb:FSSofia \
-            op monitor interval="2" timeout="8" \
-            meta target-role="Started"
-    primitive ip_shared ocf:heartbeat:IPaddr2 \
-            params ip="10.101.20.219" nic="eth0:0"
-    primitive ip_shared_arp ocf:heartbeat:SendArp \
-            params ip="10.101.20.219" nic="eth0:0"
-    group VoiceServices ip_shared ip_shared_arp fs
-    location cli-prefer-VoiceServices VoiceServices \
-            rule $id="cli-prefer-rule-VoiceServices" inf: #uname eq ubuntu-v20z
+    node freeswitch-dev \
+        attributes standby="off"
+    node ubuntu-v20z \
+        attributes standby="off"
+    primitive SharedIP ocf:heartbeat:IPaddr2 \
+        params ip="10.101.20.219" nic="eth0:0" cidr_netmask="32" \
+        op monitor interval="30s"
+    primitive dahdi lsb:dahdi \
+        op monitor interval="30s"
+    primitive freeswitch lsb:FSSofia \
+        op monitor interval="1min"
+    location prefer-freeswitch-dev freeswitch 50: freeswitch-dev
+    colocation dahdi-freeswitch-with-ip inf: dahdi freeswitch SharedIP
+    order freeswitch-after-ip inf: SharedIP dahdi freeswitch
     property $id="cib-bootstrap-options" \
-            dc-version="1.0.9-74392a28b7f31d7ddc86689598bd23114f58978b" \
-            cluster-infrastructure="Heartbeat" \
-            expected-quorum-votes="1" \
-            stonith-enabled="false" \
-            no-quorum-policy="ignore" \
-            last-lrm-refresh="1299964019"
+        dc-version="1.0.8-042548a451fce8400660f6031f4da6f0223dd5dd" \
+        cluster-infrastructure="openais" \
+        expected-quorum-votes="2" \
+        stonith-enabled="false" \
+        no-quorum-policy="ignore"
     rsc_defaults $id="rsc-options" \
-            resource-stickiness="100"
+        resource-stickiness="100"
+    op_defaults $id="op-options" \
+        timeout="240s"
 
 Of particular importance are the primitive clauses which define resource agents. You can think of a resource agent simply as a script (shell or even Phython, Perl) that presents a view of resources to the cluster, for example by providing a status CLI option. There are three classes of resources that Pacemaker support and we are using two of the three supported classes in our primitive definitions: Linux Standard Base (LSB) and Open Cluster Framework (OCF).
 
@@ -228,5 +231,18 @@ or
 At this time you can issue the ```crm_mon``` command to start the cluster monitor and you will be able to check the current state of the cluster. The DC (Designated Cluster) node is where all the decisions are made and if the current DC fails, a new one is elected from the remaining cluster nodes.
 
 <script src="https://gist.github.com/3801277.js"> </script>
+
+Then you can go ahead and test a failover by issuing the following command on the ubuntu-v20z node, which is very useful when updating packages on a certain node:
+
+    redfone@ubuntu-v20z:~$ sudo crm node standby
+
+And after a few seconds be able to check that the resources moved to the other node:
+
+    redfone@ubuntu-v20z:~$sudo crm_mon -1
+
+Once you've done everything you needed on ubuntu-v20z (in this case just test) you have to allow the node to be a cluster member again:
+
+    redfone@ubuntu-v20z:~$sudo crm node online
+
 
 
