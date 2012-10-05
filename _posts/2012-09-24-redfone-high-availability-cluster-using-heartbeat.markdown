@@ -9,11 +9,15 @@ title: RedFone & FreeSWITCH high availability
 
 [High availability](https://en.wikipedia.org/wiki/High_availability) is a system design and implementation approach geared towards keeping online resources available through node failure or system maintenance. Online services including their IP address can be migrated to backup nodes at any time, due to failures in the active node or the need of administrative maintenance. 
 
-This article describes how to configure a simple active/passive failover HA setup for a Fonebridge-FreeSWITCH system using Heartbeat and Pacemaker. 
+This article describes how to configure a simple active/passive failover HA setup for a Fonebridge-FreeSWITCH system using Corosync and Pacemaker. 
 
-Heartbat is a daemon that allows the nodes to know about the presence or disappearance of peer processes on other machines and to easily exchange messages between them.
+[Corosync](http://www.corosync.org) is a daemon that allows member nodes to know about the presence or disappearance of peer processes on other machines and to easily exchange messages between them.
 
-The heartbeat daemon needs to be combined with a cluster resource manager (CRM) which has the task of starting and stopping services (moving IP addresses, starting and stopping init scripts) so that the highly available setup can be sustained. [Pacemaker](http://clusterlabs.org/wiki/Main_Page) is the cluster resource manager used in our implementation.
+Corosync was chosen over [Heartbeat](http://linux-ha.org/wiki/Heartbeat) since development is very active for the project as opposed to Heartbeat for which development seems to have slowed down and seems to be only maintenance oriented, but this was only a personal choice.
+
+The Corosync daemon needs to be combined with a cluster resource manager (CRM) which has the task of starting and stopping services (moving IP addresses, starting and stopping init scripts) so that the highly available setup can be sustained. [Pacemaker](http://clusterlabs.org/wiki/Main_Page) is the cluster resource manager used in our implementation.
+
+
 
 ### Equipment Overview, Hardware Requirements
 
@@ -42,85 +46,117 @@ In short the following schema will be used:
 
     #shell>apt-get update
     #shell>apt-get upgrade
-    #shell>apt-get install heartbeat pacemaker
+    #shell>apt-get install corosync pacemaker
 
 
-On Debian Squeeze you may get the following right after installation
+### Networking Config
 
-    Setting up heartbeat (1:3.0.3-2) ...
-    Heartbeat not configured: /etc/ha.d/ha.cf not found. Heartbeat failure [rc=1]. Failed.
+freeswitch-dev node
+    auto eth0
+    iface eth0 inet static
+        address 10.101.20.110
+        netmask 255.255.255.0
+        network 10.101.20.0
+        broadcast 10.101.20.255
+        gateway 10.101.20.1
 
+ubuntu-v20z
 
-It only means that the config files were not found when trying to start the Heartbeat service, possibly a bug being worked on.
+    auto eth0
+    iface eth0 inet static
+        address 10.101.20.220
+        netmask 255.255.255.0
+        network 10.101.20.0
+        broadcast 10.101.20.255
+        gateway 10.101.20.1
 
+There is no need for any configuration on eth0:0 as it will be managed by pacemaker.
 
-### Configure Heartbeat
+Confirm that you can communicate between the two nodes:
 
-On the primary HA node, create a file named /etc/ha.d/ha.cf with the following contents. Replace the IP with the statically assigned IP of the secondary node. On Debian you can find a thoroughly documented ha.cf example at /usr/share/doc/heartbeat/ha.cf.gz
+    freeswitch-dev:~# ping -c 3 10.101.20.220
+    PING 10.101.20.220 (10.101.20.220) 56(84) bytes of data.
+    64 bytes from 10.101.20.220: icmp_req=1 ttl=64 time=0.156 ms
+    64 bytes from 10.101.20.220: icmp_req=2 ttl=64 time=0.147 ms
+    64 bytes from 10.101.20.220: icmp_req=3 ttl=64 time=0.148 ms
 
-***File:***/etc/ha.d/ha.cf (on primary node)
+    --- 10.101.20.220 ping statistics ---
+    3 packets transmitted, 3 received, 0% packet loss, time 1998ms
+    rtt min/avg/max/mdev = 0.147/0.150/0.156/0.010 ms
 
-    logfacility daemon
-    keepalive 2
-    deadtime 15
-    warntime 5
-    initdead 120
-    udpport 694
-    ucast eth0 10.101.20.220
-    auto_failback on
-    node freeswitch-dev
-    node ubuntu-v20z
-    use_logd yes
-    crm respawn
+Now we need to make sure that we can communicate between nodes by their names. If using DNS make sure you add the proper entries, otherwise modify ```/etc/hosts``` to resemble the following on each node:
 
+    10.101.20.110   freeswitch-dev.redfonelabs.com freeswitch-dev
+    10.101.20.220   ubuntu-v20z.redfonelabs.com ubuntu-v20z
 
-On the secondary HA node create the equivalent /etc/ha.d/ha.cf file replacing the IP with the statically assigned one pointing to the primary node.
+We can then verify communication by using names:
 
+    freeswitch-dev:~# ping -c 3 ubuntu-v20z
+    PING ubuntu-v20z.redfonelabs.com (10.101.20.220) 56(84) bytes of data.
+    64 bytes from ubuntu-v20z.redfonelabs.com (10.101.20.220): icmp_req=1 ttl=64 time=0.139 ms
+    64 bytes from ubuntu-v20z.redfonelabs.com (10.101.20.220): icmp_req=2 ttl=64 time=0.141 ms
+    64 bytes from ubuntu-v20z.redfonelabs.com (10.101.20.220): icmp_req=3 ttl=64 time=0.136 ms
 
-***File:***/etc/ha.d/ha.cf (on secondary node)
-
-    logfacility daemon
-    keepalive 2
-    deadtime 15
-    warntime 5
-    initdead 120
-    udpport 694
-    ucast eth0 10.101.20.220
-    auto_failback on
-    node freeswitch-dev
-    node ubuntu-v20z
-    use_logd yes
-    crm respawn
-
-
-Again on primary HA node create the file /etc/ha.d/authkeys with the following content.
-
-
-    auth 1
-    1 sha1 VeryStrongPassword
-
-
-***Note:*** The 'VeryStrongPassword' value is the secret key shared between nodes
-
-Adjust file permissions as follows:
-
-    #shell>chmod 600 /etc/ha.d/authkeys
-
-
-Then copy this file to the secondary HA node:
+    --- ubuntu-v20z.redfonelabs.com ping statistics ---
+    3 packets transmitted, 3 received, 0% packet loss, time 1998ms
+    rtt min/avg/max/mdev = 0.136/0.138/0.141/0.013 ms
 
 
 
-    #shell>scp /etc/ha.d/authkeys root@ubuntu-v20z:/etc/ha.d/
-    #shell>ssh root@ubuntu-v20z "chmod 600 /etc/ha.d/authkeys"
+### Configure Corosync
+
+On the primary HA node, use the corosync example file as base to create the  ```cp /etc/corosync/corosync.conf.example /etc/corosync/corosync.conf```. Replace the bind IP with the statically assigned IP of the local node. You can leave the default suggested Multicast address and port for communication between nodes.
+
+***File:***/etc/corosync/corosync.conf (on primary node)
+
+<script src="https://gist.github.com/3837137.js"> </script>
 
 
-At this point you can go ahead and start the heartbeat services on both nodes
+On the secondary HA node create the equivalent /etc/ha.d/ha.cf file replacing the bind IP with the statically assigned one of the secondary node.
 
 
+***File:***/etc/corosync/corosync.conf (on secondary node)
 
-    #shell>service heartbeat start
-    #shell>ssh root@ubuntu-v20z "service heartbeat start"
+<script src="https://gist.github.com/3837151.js"> </script>
+
+
+Since we're on Debian based distros modify the /etc/default/corosync file to enable startup of the corosync daemon. Initially on the primary node:
+
+    #shell>service start corosync
+
+
+Then check if cluster communication is working:
+
+    #shell>corosync-cfgtool -s
+
+    freeswitch-dev:~# corosync-cfgtool -s
+    Printing ring status.
+    Local node ID 1846830346
+    RING ID 0
+        id      = 10.101.20.110
+        status  = ring 0 active with no faults
+
+Everything looks normal and our fixed IP is listed over the 127.0.0.x loopback, also the status reports '''no faults'''
+
+If your output looks different initial checks would be on the network settings, firewall or script startup.
+
+You can then start Corosync on the secondary node and run the same checks.
+
+    #shell>ssh ubuntu-v20z "service start corosync"
+    #shell>ssh ubuntu-v20z "corosync-cfgtool -s"
+
+    Printing ring status.
+    Local node ID 1544840458
+    RING ID 0
+        id      = 10.101.20.220
+        status  = ring 0 active with no faults
+
+Everything looking healthy and therefore we can go ahead and check the cluster membership.
+
+    freeswitch-dev:~# corosync-quorumtool -l
+    Nodeid     Votes  Name
+    1846830346     1  freeswitch-dev.redfonelabs.com
+    1544840458     1  ubuntu-v20z.redfonelabs.com
 .
 
 
