@@ -164,6 +164,9 @@ Everything looking healthy and therefore we can go ahead and check the cluster m
 
 By making use of the Corosync messaging and membership capabilities the resource manager will execute scripts and move resources to its convenience in order to achieve maximum availability of services.
 
+Our approach is to have the FreeSWITCH service starting by default on both nodes and using a homegrown script to manipulate and monitor FS profiles. So when there is a need to failover, sofia profiles are stopped on the failed node, mod_freetdm is unloaded to release resources so that the dahdi interface can be stopped as well and then on the node taking over we will have the opposite. DAHDI will start, then fonulator is run and finally mod_freetdm will be loaded and SIP profiles started.
+
+
 This is probably the most cryptic part of the configuration but you can find extensive quality documentation from [Clusterlabs] at [1]
 
 [1]:http://www.clusterlabs.org/doc/en-US/Pacemaker/1.0/html/Pacemaker_Explained/s-resource-supported.html "ClusterLabs"
@@ -234,7 +237,7 @@ At this time you can issue the ```crm_mon``` command to start the cluster monito
 
 Then you can go ahead and test a failover by issuing the following command on the ubuntu-v20z node, which is very useful when updating packages on a certain node:
 
-    redfone@ubuntu-v20z:~$ sudo crm node standby
+    redfone@ubuntu-v20z:~$sudo crm node standby
 
 And after a few seconds be able to check that the resources moved to the other node:
 
