@@ -254,6 +254,7 @@ No se revisó la configuración del router de perímetro Cisco 2811 para
 saber que otros servicios han sido están expuestos a la red pública.
 
 ###Conclusiones y Recomendaciones
+####ETAPA 1: Atención pronta
 
 * Se deben atender con prontitud los riesgos de seguridad detectados. Se
 debe reconfigurar el servidor SSH y eliminar la posibilidad de acceso a
@@ -284,14 +285,49 @@ lista de correo donde personal de soporte tenga visibilidad.
  voipmonitor.org para ser utilizado como herramienta en las tareas de
  detección y solución de fallos en las llamadas telefónicas.
 
+####ETAPA2: Mitigar riesgos de Disponibilidad
+
 * Debido a que se han detectado situaciones de retardo en respuestas de
  paquetes SIP con los ATAs dentro de la red interna, se recomienda una
  revisión de las capacidades de cada uno de los  switches de columna y
  distribución para implementar segmentación de tráfico en VLANs y
  separar al menos el tráfico de voz del tráfico de datos.
 
-* Se recomienda la instalación de un gateway capaz de controlar 2
-  circuitos E1
+* Se recomienda la instalación de un servidor de respaldo basado en
+  FreeSWITCH que servirá en esta primera etapa como un respaldo manual
+  del servidor actualmente en marcha, luego en una etapa posterior
+  estimamos que la migración a la plataforma FreeSWITCH permitirá
+  obtener un respaldo en caliente y un mejoramiento en la estabilidad
+  y la utilización de los recursos.
+
+####ETAPA3: Mejorar y agregar robustez: Infraestructura de Alta Disponibilidad
+
+* Dado que existe un circuito ISDN E1 instalado en sitio, que está
+  siendo manejado por una central Panasonic, se recomienda la
+  migración de este circuito a un gateway 100% IP que tenga la
+  posibilidad de manejar 2 circuitos E1 para crecimiento. Esto
+  permitirá la asignación de lineas telefónicas de una manera más
+  versátil y eliminará el riesgo que se corre con la dependencia de un
+  solo proveedor. Esto requerirá la utilización de un gateway FXS para
+  alimentar los teléfonos análogos en control actual de la central
+  Panasonic. Además permitirá el crecimiento escalado en canales TDM
+  sin depender de un solo fabricante en este caso Panasonic al mover
+  los circuitos a un ambiente 100% IP.
+
+* En esta etapa se recomienda la configuración de un cluster de 2
+  nodos FreeSWITCH en ambiente de alta disponibilidad de manera que la
+  transición en caso de fallos sea en caliente. El haber completado la
+  migración del circuito E1 a un gateway independiente permitirá el
+  enrutamiento de llamadas basado en el estado del cluster. La
+  utilización de FreeSWITCH permitirá que en caso de fallos se puedan
+  inclusive recuperar llamadas en curso y la posibilidad de downtime
+  disminuirá de horas a segundos.
+
+* A partir del momento en que los servicios hayan sido migrados a esta
+  plataforma el mejoramiento consistirá en la posibilidad de
+  desarrollo de aplicaciones a la medida de las necesidades del
+  negocio tal y como: Hosted PBXs y demás.
+
 
 
 
