@@ -86,7 +86,7 @@ servidor y se analiza un histórico reciente pero que contiene
 igualmente múltiples incidentes de la misma naturaleza que los
 reportados en el pasado.
 
-<img src="http://dl.dropbox.com/u/49541944/graph/dec29.png">
+<img src="http://dl.dropbox.com/u/49541944/graph/jan4-load.png">
 
 En el gráfico se observa una carga completamente normal que tiende
 mayormente a niveles bajos debido a que las tareas de procesamiento no
