@@ -221,8 +221,59 @@ que mantiene Asterisk es obligado a reiniciarse y renovarse para todas
 las terminales SIP.
 
 ###Análisis de Disponibilidad
+Cuando iniciamos la revisión del servidor Elastix, el SO reportaba un
+uptime de 99 dias, sin embargo la aplicación Asterisk "per se"
+reportaba un uptime de 23 horas y 29 minutos. No se tiene un histórico
+de la frecuencia de reinicios a la aplicación sin embargo a través de
+las bitácoras que mantenían un histórico al 29 de Diciembre de 2012,
+pudimos observar un evento de reinicio el 31 de Diciembre y uno el 3
+de Enero de 2013.
+
+En la sección pasada se analizó el caso de fallos de llamadas en los que la
+aplicación posiblemente no hace el intento de la llamada, en
+términos de fallos de llamadas que se intentan y 
 
 ###Análisis de Seguridad
 
 
 ###Conclusiones y Recomendaciones
+
+* Se deben atender con prontitud los riesgos de seguridad detectados. Se
+debe reconfigurar el servidor SSH y eliminar la posibilidad de acceso a
+través del usuario root. Si se quiere exponer el puerto SSH para
+administración a la red pública, se debe eliminar la posibilidad de
+acceso a través de password y se debe sustituir por la implementación
+de llaves de acceso SSH. Se debe habilitar las llaves SSH necesarias
+para los usuarios que den soporte remoto.
+
+*Se debe configurar apropiadamente la aplicación fail2ban que ya está
+instalada, de manera que el monitoree los logs de los servicios que
+están expuestos a la red pública (SSH, IAX, SIP etc..) y asegurarse
+que envíe un correo electronico de los incidentes detectados a una
+lista de correo donde personal de soporte tenga visibilidad.
+
+*Se deben configurar apropiadamente reglas de iptables en Linux para
+ permitir tráfico en puertos específicos, limitar conexiones en
+ umbrales seguros, hacer contabilidad de paquetes SIP para conocer el
+ patrón de uso normal en términos de paquetes de voz y loggear
+ paquetes botados al syslog.
+
+*Debido a que se han detectado situaciones no deseadas en el tráfico
+ SIP, se recomienda se configuren reglas apropiadas de QoS para
+ priorizar la señalización SIP  en el
+ router Cisco 2811 que da acceso a la red pública.
+
+*Se recomienda la instalación del software de monitoreo,
+ voipmonitor.org para ser utilizado como herramienta en las tareas de
+ detección y solución de fallos en las llamadas telefónicas.
+
+*Debido a que se han detectado situaciones de retardo en respuestas de
+ paquetes SIP con los ATAs dentro de la red interna, se recomienda una
+ revisión de las capacidades de cada uno de los  switches de columna y
+ distribución para implementar segmentación de tráfico en VLANs y
+ separar al menos el tráfico de voz del tráfico de datos.
+
+
+
+
+ 
